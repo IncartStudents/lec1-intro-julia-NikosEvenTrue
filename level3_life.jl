@@ -10,37 +10,47 @@ end
 function step!(state::Life)
     curr = state.current_frame
     next = state.next_frame
+    lines, columns = size(curr)
 
-    #=
-    TODO: вместо случайного шума
-    реализовать один шаг алгоритма "Игра жизнь"
-    =#
     for i in 1:length(curr)
-        curr[i] = rand(0:1)
+        l, c = div(i, lines) + 1, mod(i, columns)
+        
+        neighbors = 0
+
+        for ii in -1:1, jj in -1:1
+            ii == 0 && jj == 0 && continue
+            neighbors += curr[(mod1(l + ii, lines)), mod1(c + jj, columns)]
+        end        
+
+        if curr[i] == 1
+            next[i] = neighbors in (2, 3) ? 1 : 0
+        else
+            next[i] = neighbors == 3 ? 1 : 0
+        end
     end
 
-    # Подсказка для граничных условий - тор:
-    # julia> mod1(10, 30)
-    # 10
-    # julia> mod1(31, 30)
-    # 1
+    state.current_frame, state.next_frame = next, curr
 
     return nothing
 end
 
 function (@main)(ARGS)
-    n = 30
-    m = 30
-    init = rand(0:1, n, m)
+    n = 20
+    m = 40
+    total_frames = 100
+    fps = 10
+    init_life_chance = 0.3
+
+    init = map(_ -> rand() < init_life_chance ? 1 : 0, zeros(n, m))
 
     game = Life(init, zeros(n, m))
 
-    anim = @animate for time = 1:100
+    anim = @animate for frame = 1:total_frames
         step!(game)
         cr = game.current_frame
-        heatmap(cr)
+        heatmap(cr, title="Frame $frame")
     end
-    gif(anim, "life.gif", fps = 10)
+    gif(anim, "life.gif", fps = fps)
 end
 
 export main
